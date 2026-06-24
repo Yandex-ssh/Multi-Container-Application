@@ -1,0 +1,57 @@
+---
+- name: Install Docker and Deploy Todo App
+  hosts: ubuntu
+  become: yes
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker and Docker Compose Plugin
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create deployment directory
+      file:
+        path: /home/yandex/todo-app
+        state: directory
+        owner: yandex
+        group: yandex
+        mode: '0755'
+
+    - name: Copy docker-compose.yml to VM
+      copy:
+        src: files/docker-compose.yml
+        dest: /home/yandex/todo-app/docker-compose.yml
+        owner: yandex
+        group: yandex
+        mode: '0644'
+
+    - name: Copy .env to VM
+      copy:
+        src: files/.env
+        dest: /home/yandex/todo-app/.env
+        owner: yandex
+        group: yandex
+        mode: '0600'
+
+    - name: Pull image from Docker Hub
+      command: docker compose pull
+      args:
+        chdir: /home/yandex/todo-app
+
+    - name: Start the containers automatically
+      command: docker compose up -d
+      args:
+        chdir: /home/yandex/todo-app
+
