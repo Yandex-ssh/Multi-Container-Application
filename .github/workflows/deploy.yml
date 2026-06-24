@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: "yandexz" # Hardcoded here so you don't need a separate secret for the username
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Image
+        run: |
+          docker build \
+            -t yandexz/multi-container_application:latest \
+            ./todo-api
+
+      - name: Push Image
+        run: |
+          docker push yandexz/multi-container_application:latest
+
+      # REQUIRED: Connects GitHub to your local VM via Tailscale
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github-actions
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }} # Make sure this secret is your 100.x.x.x Tailscale IP!
+          username: ${{ secrets.VM_USER }} # Make sure this secret is "yandex"
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /opt/todo-app
+            docker compose pull
+            docker compose up -d

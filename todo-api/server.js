@@ -13,7 +13,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use("/todos", require("./routes/todoRoutes"));
 
 app.get("/", (req, res) => {
-  res.send("Todo API Running");
+  res.send("Todo API Running v2");
 });
 
 const PORT = 3000;
